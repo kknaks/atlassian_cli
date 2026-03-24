@@ -6,6 +6,7 @@ services:
       - ATLASSIAN_EMAIL=${ATLASSIAN_EMAIL}
       - ATLASSIAN_API_TOKEN=${ATLASSIAN_API_TOKEN}
       - PYACLI_DEFAULT_PROJECT=${PYACLI_DEFAULT_PROJECT}
+      - PYACLI_EPIC_MAP=${PYACLI_EPIC_MAP}
     volumes:
       - acli-auth:/root/.config/acli
 

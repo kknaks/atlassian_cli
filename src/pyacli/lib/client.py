@@ -22,11 +22,38 @@ class JiraClient:
     def __init__(
         self,
         project: str | None = None,
+        epic_map: dict[str, str] | None = None,
         runner: AcliRunner | None = None,
         timeout: float = 30.0,
     ) -> None:
         self.project = project or os.environ.get("PYACLI_DEFAULT_PROJECT", "")
+        self._epic_map = epic_map or self._load_epic_map()
         self._runner = runner or AcliRunner(timeout=timeout)
+
+    @staticmethod
+    def _load_epic_map() -> dict[str, str]:
+        """Load epic map from PYACLI_EPIC_MAP env var.
+
+        Format: "frontend:WNVO-9,backend:WNVO-23,ai:WNVO-24"
+        """
+        raw = os.environ.get("PYACLI_EPIC_MAP", "")
+        if not raw:
+            return {}
+
+        result: dict[str, str] = {}
+        for pair in raw.split(","):
+            pair = pair.strip()
+            if ":" not in pair:
+                continue
+            name, key = pair.split(":", maxsplit=1)
+            result[name.strip()] = key.strip()
+
+        return result
+
+    @property
+    def epics(self) -> dict[str, str]:
+        """Return current epic map (name -> issue key)."""
+        return dict(self._epic_map)
 
     async def list_projects(self) -> list[JiraProject]:
         """List all visible Jira projects."""
@@ -75,14 +102,28 @@ class JiraClient:
         assignee: str | None = None,
         labels: list[str] | None = None,
         parent: str | None = None,
+        epic: str | None = None,
         request: CreateIssueRequest | None = None,
     ) -> JiraIssue:
-        """Create a Jira issue. Pass keyword args or a CreateIssueRequest."""
+        """Create a Jira issue.
+
+        Use epic= to resolve parent from PYACLI_EPIC_MAP.
+        Use parent= for explicit parent key. parent takes precedence over epic.
+        """
         target_project = project or self.project
         if not target_project:
             raise AcliValidationError(
                 "Project is required. Pass project= or set PYACLI_DEFAULT_PROJECT env var."
             )
+
+        # Resolve epic name to parent key
+        if parent is None and epic is not None:
+            parent = self._epic_map.get(epic)
+            if parent is None:
+                available = list(self._epic_map.keys())
+                raise AcliValidationError(
+                    f"Epic '{epic}' not found in epic map. Available: {available}"
+                )
 
         if request is None:
             if summary is None:

@@ -72,6 +72,58 @@ class TestInit:
                 await client.list_issue_types()
 
 
+class TestEpicMap:
+    """Tests for epic map loading and resolution."""
+
+    def test_epic_map_from_arg(self, mock_runner: MagicMock) -> None:
+        epic_map = {"frontend": "WNVO-9", "backend": "WNVO-23"}
+        client = JiraClient(project="WNVO", epic_map=epic_map, runner=mock_runner)
+        assert client.epics == epic_map
+
+    def test_epic_map_from_env(self, mock_runner: MagicMock) -> None:
+        env = {"PYACLI_EPIC_MAP": "frontend:WNVO-9,backend:WNVO-23,ai:WNVO-24"}
+        with patch.dict("os.environ", env):
+            client = JiraClient(project="WNVO", runner=mock_runner)
+            assert client.epics == {
+                "frontend": "WNVO-9",
+                "backend": "WNVO-23",
+                "ai": "WNVO-24",
+            }
+
+    def test_epic_map_empty_env(self, mock_runner: MagicMock) -> None:
+        with patch.dict("os.environ", {}, clear=True):
+            client = JiraClient(project="WNVO", runner=mock_runner)
+            assert client.epics == {}
+
+    async def test_create_issue_with_epic(self, mock_runner: MagicMock) -> None:
+        mock_runner.run_json = AsyncMock(return_value=SAMPLE_ISSUE_JSON)
+        epic_map = {"frontend": "WNVO-9"}
+        client = JiraClient(project="WNVO", epic_map=epic_map, runner=mock_runner)
+
+        await client.create_issue(summary="Fix bug", epic="frontend")
+
+        call_args = mock_runner.run_json.call_args[0]
+        assert "--parent" in call_args
+        assert "WNVO-9" in call_args
+
+    async def test_create_issue_parent_overrides_epic(self, mock_runner: MagicMock) -> None:
+        mock_runner.run_json = AsyncMock(return_value=SAMPLE_ISSUE_JSON)
+        epic_map = {"frontend": "WNVO-9"}
+        client = JiraClient(project="WNVO", epic_map=epic_map, runner=mock_runner)
+
+        await client.create_issue(summary="Fix", parent="WNVO-99", epic="frontend")
+
+        call_args = mock_runner.run_json.call_args[0]
+        assert "WNVO-99" in call_args  # parent wins
+
+    async def test_create_issue_unknown_epic_raises(self, mock_runner: MagicMock) -> None:
+        epic_map = {"frontend": "WNVO-9"}
+        client = JiraClient(project="WNVO", epic_map=epic_map, runner=mock_runner)
+
+        with pytest.raises(AcliValidationError, match="not found in epic map"):
+            await client.create_issue(summary="Fix", epic="unknown")
+
+
 class TestListProjects:
     """Tests for JiraClient.list_projects()."""
 
