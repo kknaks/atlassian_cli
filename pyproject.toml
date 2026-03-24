@@ -22,20 +22,11 @@ dev = [
 pyacli-mcp = "pyacli.mcp:run"
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0", "poetry-dynamic-versioning>=1.0.0,<2.0.0"]
-build-backend = "poetry_dynamic_versioning.backend"
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 packages = [{include = "pyacli", from = "src"}]
-
-[tool.poetry-dynamic-versioning]
-enable = true
-vcs = "git"
-style = "pep440"
-pattern = "^v(?P<base>\\d+\\.\\d+\\.\\d+)"
-
-[tool.poetry-dynamic-versioning.substitution]
-files = ["src/pyacli/__init__.py"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
