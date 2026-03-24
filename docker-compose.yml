@@ -1,0 +1,12 @@
+services:
+  pyacli:
+    build: .
+    environment:
+      - ATLASSIAN_SITE=${ATLASSIAN_SITE}
+      - ATLASSIAN_EMAIL=${ATLASSIAN_EMAIL}
+      - ATLASSIAN_API_TOKEN=${ATLASSIAN_API_TOKEN}
+    volumes:
+      - acli-auth:/root/.config/acli
+
+volumes:
+  acli-auth:
