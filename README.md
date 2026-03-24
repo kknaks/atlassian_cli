@@ -5,7 +5,7 @@ Python async wrapper for Atlassian CLI (acli). Subprocess로 acli를 호출하�
 ## 설치
 
 ```bash
-pip install pyacli
+pip install atlassian-acli
 ```
 
 ## 환경변수

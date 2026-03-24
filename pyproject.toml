@@ -1,5 +1,5 @@
 [project]
-name = "pyacli"
+name = "atlassian-acli"
 version = "0.0.0"
 description = "Python async wrapper for Atlassian CLI (acli)"
 authors = [
