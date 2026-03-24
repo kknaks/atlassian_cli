@@ -314,5 +314,14 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
 
 async def main() -> None:
     """Run MCP server with stdio transport."""
+    from mcp.server import InitializationOptions
+
     async with stdio_server() as (read_stream, write_stream):
-        await server.run(read_stream, write_stream)
+        await server.run(
+            read_stream,
+            write_stream,
+            InitializationOptions(
+                server_name="pyacli",
+                server_version="0.1.0",
+            ),
+        )
