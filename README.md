@@ -14,7 +14,8 @@ pip install pyacli
 ATLASSIAN_SITE=your-site.atlassian.net
 ATLASSIAN_EMAIL=user@example.com
 ATLASSIAN_API_TOKEN=your-api-token
-PYACLI_DEFAULT_PROJECT=PROJ
+PYACLI_DEFAULT_PROJECT=WNVO
+PYACLI_EPIC_MAP=frontend:WNVO-9,backend:WNVO-23,ai:WNVO-24
 ```
 
 > acli 바이너리가 필요합니다: `brew tap atlassian/homebrew-acli && brew install acli`
@@ -26,20 +27,32 @@ import asyncio
 from pyacli import JiraClient
 
 async def main():
-    client = JiraClient(project="WNVO")
+    # env에서 자동 로드: PYACLI_DEFAULT_PROJECT, PYACLI_EPIC_MAP
+    client = JiraClient()
 
     # 프로젝트 목록 조회
     projects = await client.list_projects()
 
-    # 에픽 밑에 작업 생성
+    # 에픽 이름으로 이슈 생성 (epic map 사용)
     issue = await client.create_issue(
         summary="로그인 에러 수정",
-        issue_type="작업",
-        parent="WNVO-9",           # 에픽 키 (필수)
+        epic="frontend",            # → WNVO-9 밑에 생성
         labels=["bug", "backend"],
     )
     print(issue.key)  # WNVO-111
     print(issue.url)  # https://site.atlassian.net/browse/WNVO-111
+
+    # 다른 에픽에 이슈 생성
+    await client.create_issue(
+        summary="API 에러 처리",
+        epic="backend",             # → WNVO-23 밑에 생성
+    )
+
+    # 에픽 키를 직접 지정하는 것도 가능 (parent= 우선)
+    await client.create_issue(
+        summary="특수한 작업",
+        parent="WNVO-24",          # 직접 에픽 키 지정
+    )
 
     # 작업 밑에 하위작업 생성
     subtask = await client.create_issue(
@@ -59,12 +72,9 @@ async def main():
     # 상태 변경
     await client.transition_issue("WNVO-111", status="완료")
 
-    # 다른 프로젝트에 이슈 생성 (프로젝트 오버라이드)
-    await client.create_issue(
-        summary="다른 프로젝트 작업",
-        project="OTHER",
-        parent="OTHER-1",          # 해당 프로젝트의 에픽
-    )
+    # 등록된 에픽 목록 확인
+    print(client.epics)
+    # {"frontend": "WNVO-9", "backend": "WNVO-23", "ai": "WNVO-24"}
 
 asyncio.run(main())
 ```
@@ -145,6 +155,7 @@ services:
       - ATLASSIAN_EMAIL=${ATLASSIAN_EMAIL}
       - ATLASSIAN_API_TOKEN=${ATLASSIAN_API_TOKEN}
       - PYACLI_DEFAULT_PROJECT=${PYACLI_DEFAULT_PROJECT}
+      - PYACLI_EPIC_MAP=${PYACLI_EPIC_MAP}
 ```
 
 ## 인증
