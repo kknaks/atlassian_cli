@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pyacli.lib.client import JiraClient
-from pyacli.lib.dto import JiraIssue
+from pyacli.lib.dto import IssueType, JiraIssue, JiraProject
 from pyacli.lib.exceptions import (
     AcliAuthError,
     AcliError,
@@ -21,6 +21,8 @@ __all__ = [
     "JiraClient",
     "AcliRunner",
     "JiraIssue",
+    "JiraProject",
+    "IssueType",
     "CreateIssueRequest",
     "SearchIssuesRequest",
     "TransitionIssueRequest",

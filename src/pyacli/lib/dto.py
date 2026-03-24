@@ -67,6 +67,18 @@ class Project(BaseModel):
     name: str
 
 
+class JiraProject(BaseModel):
+    """Jira project from acli project list JSON."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    id: str
+    key: str
+    name: str
+    project_type_key: str = Field(default="", alias="projectTypeKey")
+    style: str = ""
+
+
 class ParentRef(BaseModel):
     """Parent issue reference (summary info only)."""
 

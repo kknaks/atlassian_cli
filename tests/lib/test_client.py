@@ -19,6 +19,63 @@ def client(mock_runner: AcliRunner) -> JiraClient:
     return JiraClient(project="WNVO", runner=mock_runner)
 
 
+SAMPLE_PROJECT_LIST_JSON = [
+    {
+        "id": "10000",
+        "key": "WNVO",
+        "name": "멋사로켓단",
+        "projectTypeKey": "software",
+        "style": "next-gen",
+    },
+    {
+        "id": "10001",
+        "key": "LEARNJIRA",
+        "name": "(Learn) Jira Premium benefits",
+        "projectTypeKey": "software",
+        "style": "next-gen",
+    },
+]
+
+
+class TestListProjects:
+    """Tests for JiraClient.list_projects()."""
+
+    async def test_list_projects(self, client: JiraClient, mock_runner: MagicMock) -> None:
+        mock_runner.run_json.return_value = SAMPLE_PROJECT_LIST_JSON
+
+        projects = await client.list_projects()
+
+        assert len(projects) == 2
+        assert projects[0].key == "WNVO"
+        assert projects[1].key == "LEARNJIRA"
+
+    async def test_empty_projects(self, client: JiraClient, mock_runner: MagicMock) -> None:
+        mock_runner.run_json.return_value = []
+
+        projects = await client.list_projects()
+        assert projects == []
+
+
+class TestListIssueTypes:
+    """Tests for JiraClient.list_issue_types()."""
+
+    async def test_list_issue_types(self, client: JiraClient, mock_runner: MagicMock) -> None:
+        mock_runner.run_json.return_value = [SAMPLE_ISSUE_JSON]
+
+        types = await client.list_issue_types()
+
+        assert len(types) == 1
+        assert types[0].name == "하위 작업"
+
+    async def test_list_issue_types_other_project(self, client: JiraClient, mock_runner: MagicMock) -> None:
+        mock_runner.run_json.return_value = [SAMPLE_ISSUE_JSON]
+
+        await client.list_issue_types(project="OTHER")
+
+        call_args = mock_runner.run_json.call_args[0]
+        assert "project = OTHER" in call_args
+
+
 class TestCreateIssue:
     """Tests for JiraClient.create_issue()."""
 
@@ -50,6 +107,14 @@ class TestCreateIssue:
         assert issue.key == "WNVO-110"
         call_args = mock_runner.run_json.call_args[0]
         assert "Bug" in call_args
+
+    async def test_project_override(self, client: JiraClient, mock_runner: MagicMock) -> None:
+        mock_runner.run_json.return_value = SAMPLE_ISSUE_JSON
+
+        await client.create_issue(summary="Task", project="OTHER")
+
+        call_args = mock_runner.run_json.call_args[0]
+        assert "OTHER" in call_args
 
     async def test_missing_summary_and_request(self, client: JiraClient) -> None:
         with pytest.raises(AcliValidationError, match="summary"):
