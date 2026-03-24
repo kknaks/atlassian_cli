@@ -99,7 +99,7 @@ class JiraIssue(BaseModel):
     self_url: str = Field(default="", alias="self")
 
     summary: str = ""
-    description: str | None = None
+    description: str | dict[str, Any] | None = None
     status: Status | None = None
     issuetype: IssueType | None = None
     priority: Priority | None = None
