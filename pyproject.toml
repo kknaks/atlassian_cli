@@ -1,0 +1,30 @@
+[project]
+name = "pyacli"
+version = "0.1.0"
+description = "Python async wrapper for Atlassian CLI (acli)"
+authors = [
+    {name = "kknaks"}
+]
+readme = "README.md"
+requires-python = ">=3.11,<4.0"
+dependencies = [
+    "pydantic>=2.0,<3.0",
+    "mcp>=1.0,<2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+packages = [{include = "pyacli", from = "src"}]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
