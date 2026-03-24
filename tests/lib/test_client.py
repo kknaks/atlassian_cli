@@ -1,7 +1,7 @@
 """Tests for JiraClient."""
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -35,6 +35,41 @@ SAMPLE_PROJECT_LIST_JSON = [
         "style": "next-gen",
     },
 ]
+
+
+class TestInit:
+    """Tests for JiraClient initialization."""
+
+    def test_project_from_arg(self, mock_runner: MagicMock) -> None:
+        client = JiraClient(project="WNVO", runner=mock_runner)
+        assert client.project == "WNVO"
+
+    def test_project_from_env(self, mock_runner: MagicMock) -> None:
+        with patch.dict("os.environ", {"PYACLI_DEFAULT_PROJECT": "FROM_ENV"}):
+            client = JiraClient(runner=mock_runner)
+            assert client.project == "FROM_ENV"
+
+    def test_project_arg_overrides_env(self, mock_runner: MagicMock) -> None:
+        with patch.dict("os.environ", {"PYACLI_DEFAULT_PROJECT": "FROM_ENV"}):
+            client = JiraClient(project="FROM_ARG", runner=mock_runner)
+            assert client.project == "FROM_ARG"
+
+    def test_no_project(self, mock_runner: MagicMock) -> None:
+        with patch.dict("os.environ", {}, clear=True):
+            client = JiraClient(runner=mock_runner)
+            assert client.project == ""
+
+    async def test_create_issue_no_project_raises(self, mock_runner: MagicMock) -> None:
+        with patch.dict("os.environ", {}, clear=True):
+            client = JiraClient(runner=mock_runner)
+            with pytest.raises(AcliValidationError, match="Project is required"):
+                await client.create_issue(summary="test")
+
+    async def test_list_issue_types_no_project_raises(self, mock_runner: MagicMock) -> None:
+        with patch.dict("os.environ", {}, clear=True):
+            client = JiraClient(runner=mock_runner)
+            with pytest.raises(AcliValidationError, match="Project is required"):
+                await client.list_issue_types()
 
 
 class TestListProjects:

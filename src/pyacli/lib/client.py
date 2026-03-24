@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import os
 
 from pyacli.lib.dto import IssueType, JiraIssue, JiraProject
 from pyacli.lib.exceptions import AcliValidationError
@@ -20,11 +21,11 @@ class JiraClient:
 
     def __init__(
         self,
-        project: str,
+        project: str | None = None,
         runner: AcliRunner | None = None,
         timeout: float = 30.0,
     ) -> None:
-        self.project = project
+        self.project = project or os.environ.get("PYACLI_DEFAULT_PROJECT", "")
         self._runner = runner or AcliRunner(timeout=timeout)
 
     async def list_projects(self) -> list[JiraProject]:
@@ -40,6 +41,10 @@ class JiraClient:
     async def list_issue_types(self, project: str | None = None) -> list[IssueType]:
         """List available issue types for a project via search."""
         target = project or self.project
+        if not target:
+            raise AcliValidationError(
+                "Project is required. Pass project= or set PYACLI_DEFAULT_PROJECT env var."
+            )
         data = await self._runner.run_json(
             "jira", "workitem", "search",
             "--jql", f"project = {target}",
@@ -74,6 +79,10 @@ class JiraClient:
     ) -> JiraIssue:
         """Create a Jira issue. Pass keyword args or a CreateIssueRequest."""
         target_project = project or self.project
+        if not target_project:
+            raise AcliValidationError(
+                "Project is required. Pass project= or set PYACLI_DEFAULT_PROJECT env var."
+            )
 
         if request is None:
             if summary is None:
