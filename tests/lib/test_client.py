@@ -292,3 +292,27 @@ class TestAddComment:
         assert "WNVO-110" in call_args
         assert "--body" in call_args
         assert "traceback here" in call_args
+
+
+class TestListComments:
+    """Tests for JiraClient.list_comments()."""
+
+    async def test_list_comments(self, client: JiraClient, mock_runner: MagicMock) -> None:
+        mock_runner.run_json.return_value = {
+            "comments": [
+                {"author": "user", "body": "first comment", "id": "1"},
+                {"author": "user", "body": "second comment", "id": "2"},
+            ],
+            "total": 2,
+        }
+
+        comments = await client.list_comments("WNVO-110")
+
+        assert len(comments) == 2
+        assert comments[0]["body"] == "first comment"
+
+    async def test_list_comments_empty(self, client: JiraClient, mock_runner: MagicMock) -> None:
+        mock_runner.run_json.return_value = {"comments": [], "total": 0}
+
+        comments = await client.list_comments("WNVO-110")
+        assert comments == []

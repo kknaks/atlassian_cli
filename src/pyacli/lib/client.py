@@ -197,3 +197,15 @@ class JiraClient:
             "--key", key,
             "--body", body,
         )
+
+    async def list_comments(self, key: str) -> list[dict[str, str]]:
+        """List comments on an issue."""
+        data = await self._runner.run_json(
+            "jira", "workitem", "comment", "list",
+            "--key", key,
+            "--json",
+        )
+
+        if isinstance(data, dict):
+            return data.get("comments", [])
+        return []

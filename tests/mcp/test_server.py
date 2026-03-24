@@ -14,9 +14,9 @@ from pyacli.mcp.server import call_tool, list_tools
 class TestListTools:
     """Tests for MCP tool registration."""
 
-    async def test_returns_ten_tools(self) -> None:
+    async def test_returns_eleven_tools(self) -> None:
         tools = await list_tools()
-        assert len(tools) == 10
+        assert len(tools) == 11
 
     async def test_schema_tool_names(self) -> None:
         tools = await list_tools()
@@ -181,6 +181,20 @@ class TestJiraTools:
 
         assert "WNVO-110" in result[0].text
         client.add_comment.assert_awaited_once_with("WNVO-110", body="traceback log")
+
+    @patch("pyacli.mcp.server._get_client")
+    async def test_list_comments(self, mock_get: MagicMock) -> None:
+        client = MagicMock()
+        client.list_comments = AsyncMock(return_value=[
+            {"author": "user", "body": "comment", "id": "1"},
+        ])
+        mock_get.return_value = client
+
+        result = await call_tool("list_comments", {"key": "WNVO-110"})
+        data = json.loads(result[0].text)
+
+        assert len(data) == 1
+        assert data[0]["body"] == "comment"
 
 
 class TestUnknownTool:
