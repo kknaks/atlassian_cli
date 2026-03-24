@@ -183,6 +183,18 @@ async def list_tools() -> list[Tool]:
                 "required": ["key", "status"],
             },
         ),
+        Tool(
+            name="add_comment",
+            description="Add a comment to a Jira issue",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "key": {"type": "string", "description": "Issue key"},
+                    "body": {"type": "string", "description": "Comment body text"},
+                },
+                "required": ["key", "body"],
+            },
+        ),
     ]
 
 
@@ -294,6 +306,10 @@ async def _handle_jira_tool(name: str, arguments: dict[str, Any]) -> list[TextCo
         await client.transition_issue(arguments["key"], status=arguments["status"])
         return [TextContent(type="text", text=f"Transitioned {arguments['key']} to '{arguments['status']}'")]
 
+    if name == "add_comment":
+        await client.add_comment(arguments["key"], body=arguments["body"])
+        return [TextContent(type="text", text=f"Comment added to {arguments['key']}")]
+
     return []
 
 
@@ -301,7 +317,7 @@ async def _handle_jira_tool(name: str, arguments: dict[str, Any]) -> list[TextCo
 async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
     """Route tool calls to schema or Jira handlers."""
     schema_tools = {"list_methods", "get_method_info", "get_models"}
-    jira_tools = {"list_projects", "list_issue_types", "get_issue", "search_issues", "create_issue", "transition_issue"}
+    jira_tools = {"list_projects", "list_issue_types", "get_issue", "search_issues", "create_issue", "transition_issue", "add_comment"}
 
     if name in schema_tools:
         return await _handle_schema_tool(name, arguments)

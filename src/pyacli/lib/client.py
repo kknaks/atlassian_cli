@@ -189,3 +189,11 @@ class JiraClient:
         logger.debug("transition_issue args: %s", args)
 
         await self._runner.run(*args)
+
+    async def add_comment(self, key: str, *, body: str) -> None:
+        """Add a comment to an issue."""
+        await self._runner.run(
+            "jira", "workitem", "comment", "create",
+            "--key", key,
+            "--body", body,
+        )

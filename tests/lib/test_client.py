@@ -275,3 +275,20 @@ class TestTransitionIssue:
         assert "--status" in call_args
         assert "Done" in call_args
         assert "--yes" in call_args
+
+
+class TestAddComment:
+    """Tests for JiraClient.add_comment()."""
+
+    async def test_add_comment(self, client: JiraClient, mock_runner: MagicMock) -> None:
+        mock_runner.run.return_value = AcliResult(0, "", "")
+
+        await client.add_comment("WNVO-110", body="traceback here")
+
+        call_args = mock_runner.run.call_args[0]
+        assert "comment" in call_args
+        assert "create" in call_args
+        assert "--key" in call_args
+        assert "WNVO-110" in call_args
+        assert "--body" in call_args
+        assert "traceback here" in call_args

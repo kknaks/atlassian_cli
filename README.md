@@ -117,6 +117,69 @@ req = CreateIssueRequest(
 issue = await client.create_issue(request=req)
 ```
 
+## FastAPI 에러 자동 보고
+
+서버에서 에러 발생 시 자동으로 Jira 버그 이슈를 생성하는 예시:
+
+```python
+import traceback
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from pyacli import JiraClient
+
+app = FastAPI()
+client = JiraClient()
+
+# ⚠️ @app.exception_handler(Exception) 사용 금지 — ASGI 레벨에서 응답이 깨짐
+# ✅ 미들웨어 방식 사용
+@app.middleware("http")
+async def error_reporting_middleware(request: Request, call_next):
+    """에러 발생 시 Jira에 버그 이슈 자동 생성."""
+    try:
+        return await call_next(request)
+    except Exception as exc:
+        tb = traceback.format_exception(type(exc), exc, exc.__traceback__)
+        description = (
+            f"*Endpoint:* {request.method} {request.url.path}\n"
+            f"*Error:* {type(exc).__name__}: {exc}\n\n"
+            f"{{code}}\n{''.join(tb)}{{code}}"
+        )
+        try:
+            issue = await client.create_issue(
+                summary=f"[AUTO-BUG] {type(exc).__name__}: {exc}",
+                description=description,
+                issue_type="버그",
+                epic="backend",
+            )
+            jira_key = issue.key
+        except Exception:
+            jira_key = None
+
+        return JSONResponse(
+            status_code=500,
+            content={"error": str(exc), "jira_issue": jira_key},
+        )
+```
+
+traceback은 description에 요약을, 상세 로그는 댓글로 분리할 수도 있습니다:
+
+```python
+        try:
+            issue = await client.create_issue(
+                summary=f"[AUTO-BUG] {type(exc).__name__}: {exc}",
+                description=f"Endpoint: {request.method} {request.url.path}",
+                issue_type="버그",
+                epic="backend",
+            )
+            # 상세 traceback을 댓글로 추가
+            await client.add_comment(
+                issue.key,
+                body=f"{{code}}\n{''.join(tb)}{{code}}",
+            )
+        except Exception:
+            pass
+```
+
 ## MCP 서버
 
 Claude Desktop/Claude Code에서 pyacli API 사용법을 조회할 수 있는 MCP 서버가 포함되어 있습니다.

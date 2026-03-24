@@ -14,9 +14,9 @@ from pyacli.mcp.server import call_tool, list_tools
 class TestListTools:
     """Tests for MCP tool registration."""
 
-    async def test_returns_nine_tools(self) -> None:
+    async def test_returns_ten_tools(self) -> None:
         tools = await list_tools()
-        assert len(tools) == 9
+        assert len(tools) == 10
 
     async def test_schema_tool_names(self) -> None:
         tools = await list_tools()
@@ -169,6 +169,18 @@ class TestJiraTools:
 
         assert "완료" in result[0].text
         client.transition_issue.assert_awaited_once_with("WNVO-110", status="완료")
+
+
+    @patch("pyacli.mcp.server._get_client")
+    async def test_add_comment(self, mock_get: MagicMock) -> None:
+        client = MagicMock()
+        client.add_comment = AsyncMock(return_value=None)
+        mock_get.return_value = client
+
+        result = await call_tool("add_comment", {"key": "WNVO-110", "body": "traceback log"})
+
+        assert "WNVO-110" in result[0].text
+        client.add_comment.assert_awaited_once_with("WNVO-110", body="traceback log")
 
 
 class TestUnknownTool:
